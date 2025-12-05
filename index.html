@@ -26,9 +26,21 @@
         .btn-excel:hover { background: #166a2a; }
         .spinner-border { width: 3rem; height: 3rem; }
         .other-course-input { display: none; margin-top: 10px; }
+        .index-alert { position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px; }
     </style>
 </head>
 <body>
+
+<!-- Index Alert -->
+<div id="indexAlert" class="alert alert-warning alert-dismissible fade show index-alert d-none" role="alert">
+    <strong><i class="fas fa-database"></i> Database Index Needed</strong>
+    <p class="mb-1 small">Click below to create the required index:</p>
+    <a href="https://console.firebase.google.com/v1/r/project/studentfeemanagement-aba76/firestore/indexes?create_composite=Cltwcm9qZWN0cy9zdHVkZW50ZmVlbWFuYWdlbWVudC1hYmE3Ni9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvc3R1ZGVudHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaDQoJY3JlYXRlZEF0EAIaDAoIX19uYW1lX18QAg" 
+       target="_blank" class="btn btn-sm btn-primary mt-2">
+        <i class="fas fa-external-link-alt"></i> Create Index Now
+    </a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
 
 <div id="authScreen" class="container">
     <div class="row justify-content-center align-items-center min-vh-100">
@@ -54,47 +66,6 @@
                             <i class="fas fa-user-plus"></i> Create New Account
                         </button>
                     </form>
-                    
-                    <div class="mt-4">
-                        <div id="setupGuide" class="d-none">
-                            <h5 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Setup Required</h5>
-                            <p class="small text-start">
-                                1. Go to <a href="https://firebase.google.com" target="_blank">Firebase Console</a><br>
-                                2. Create a new project<br>
-                                3. Enable Authentication → Email/Password<br>
-                                4. Create Firestore Database<br>
-                                5. Update security rules (see below)<br>
-                                6. Get your config and replace in code
-                            </p>
-                            <button id="toggleConfig" class="btn btn-sm btn-info mb-3">
-                                Show Firebase Configuration
-                            </button>
-                            <div id="configDetails" class="d-none text-start small">
-                                <pre class="bg-dark text-white p-3 rounded">
-// Replace this in the JavaScript section:
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};</pre>
-                                <p class="mt-2"><strong>Security Rules (Firestore → Rules tab):</strong></p>
-                                <pre class="bg-dark text-white p-3 rounded">
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /students/{studentId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
-    }
-  }
-}</pre>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -187,7 +158,7 @@ service cloud.firestore {
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Payment Date</label>
-                                    <input type="date" class="form-control" id="paymentDate" value="<?php echo date('Y-m-d'); ?>">
+                                    <input type="date" class="form-control" id="paymentDate">
                                 </div>
                                 <div id="formError" class="alert alert-danger d-none"></div>
                                 <button type="submit" class="btn btn-success w-100">
@@ -268,17 +239,14 @@ service cloud.firestore {
     };
 
     // Initialize Firebase
-    if (firebaseConfig.apiKey.includes("DummyKey")) {
-        document.getElementById('setupGuide').classList.remove('d-none');
-    }
-    
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     
     let students = [];
     let currentUser = null;
-    let lastAdmissionNo = 0;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     // ==================== AUTHENTICATION ====================
     auth.onAuthStateChanged((user) => {
@@ -296,11 +264,6 @@ service cloud.firestore {
             students = [];
         }
     });
-
-    document.getElementById('toggleConfig').onclick = () => {
-        const configDetails = document.getElementById('configDetails');
-        configDetails.classList.toggle('d-none');
-    };
 
     document.getElementById('authForm').onsubmit = async (e) => {
         e.preventDefault();
@@ -336,10 +299,10 @@ service cloud.firestore {
     function generateAdmissionNo() {
         if (!currentUser) return;
         
-        // Generate admission number based on timestamp and user ID
+        // Generate admission number based on timestamp and random number
         const timestamp = Date.now().toString().slice(-6);
-        const userIdPrefix = currentUser.uid.slice(0, 3).toUpperCase();
-        const admissionNo = `ADM${userIdPrefix}${timestamp}`;
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        const admissionNo = `ADM${timestamp}${random}`;
         document.getElementById('admissionNo').value = admissionNo;
         return admissionNo;
     }
@@ -364,31 +327,107 @@ service cloud.firestore {
     async function loadStudents() {
         if (!currentUser) return;
         
+        document.getElementById('loadingData').classList.remove('d-none');
+        document.getElementById('tableContainer').classList.add('d-none');
+        document.getElementById('noData').classList.add('d-none');
+        
         try {
-            const snapshot = await db.collection('students')
-                .where('userId', '==', currentUser.uid)
-                .orderBy('createdAt', 'desc')
-                .get();
-            
-            students = [];
-            snapshot.forEach(doc => {
-                students.push({
-                    id: doc.id,
-                    ...doc.data()
+            // Try with orderBy first (for indexed databases)
+            try {
+                const snapshot = await db.collection('students')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                
+                students = [];
+                snapshot.forEach(doc => {
+                    students.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
                 });
-            });
+                
+                // Hide index alert if successful
+                document.getElementById('indexAlert').classList.add('d-none');
+                
+            } catch (indexError) {
+                // If index error, fall back to simple query without orderBy
+                console.log("Index error, falling back to simple query:", indexError.message);
+                
+                // Show index alert
+                document.getElementById('indexAlert').classList.remove('d-none');
+                
+                const snapshot = await db.collection('students')
+                    .where('userId', '==', currentUser.uid)
+                    .get();
+                
+                students = [];
+                snapshot.forEach(doc => {
+                    students.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Sort locally by creation date (most recent first)
+                students.sort((a, b) => {
+                    const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+                    const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+                    return dateB - dateA; // Descending order
+                });
+            }
             
             renderStudents();
             renderReports();
             
         } catch (error) {
             console.error("Error loading students:", error);
-            showError('formError', 'Error loading data: ' + error.message);
+            
+            if (error.code === 'failed-precondition' && error.message.includes('index')) {
+                showError('formError', 
+                    'Database index required. <a href="#" onclick="showIndexInstructions()">Click here for instructions</a>');
+                
+                // Show the index alert
+                document.getElementById('indexAlert').classList.remove('d-none');
+                
+                // Try alternative query without where clause
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    setTimeout(() => loadStudents(), 2000);
+                }
+            } else {
+                showError('formError', 'Error loading data: ' + error.message);
+            }
         } finally {
             document.getElementById('loadingData').classList.add('d-none');
-            document.getElementById('tableContainer').classList.remove('d-none');
+            if (students.length > 0) {
+                document.getElementById('tableContainer').classList.remove('d-none');
+            } else {
+                document.getElementById('noData').classList.remove('d-none');
+            }
         }
     }
+
+    // Show index instructions
+    window.showIndexInstructions = function() {
+        alert(`To fix the index issue:
+
+1. CLICK THIS LINK: 
+   https://console.firebase.google.com/v1/r/project/studentfeemanagement-aba76/firestore/indexes?create_composite=Cltwcm9qZWN0cy9zdHVkZW50ZmVlbWFuYWdlbWVudC1hYmE3Ni9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvc3R1ZGVudHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaDQoJY3JlYXRlZEF0EAIaDAoIX19uYW1lX18QAg
+
+2. Click "Create Index" on the Firebase page
+3. Wait 2-5 minutes for the index to build
+4. Refresh this page
+
+OR follow these manual steps:
+1. Go to Firebase Console
+2. Select your project: studentfeemanagement-aba76
+3. Go to Firestore → Indexes tab
+4. Click "Create Index"
+5. Collection: students
+6. Add fields: userId (Ascending), createdAt (Descending)
+7. Click Create`);
+    };
 
     document.getElementById('addStudentForm').onsubmit = async (e) => {
         e.preventDefault();
@@ -438,7 +477,7 @@ service cloud.firestore {
             payments: paid > 0 ? [{ 
                 amount: paid, 
                 date: paymentDate,
-                timestamp: new Date().toISOString()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }] : [],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -452,7 +491,11 @@ service cloud.firestore {
             document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
             generateAdmissionNo(); // Generate new admission number
             showError('formError', '', true); // Clear error
-            loadStudents(); // Reload the list
+            
+            // Reload students after adding
+            loadStudents();
+            
+            alert('Student added successfully!');
         } catch (error) {
             console.error("Error adding student:", error);
             
@@ -498,7 +541,9 @@ service cloud.firestore {
             // Format payment history with dates
             const history = student.payments && student.payments.length > 0
                 ? student.payments.map(p => {
-                    const date = p.date || (p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A');
+                    const date = p.date || (p.timestamp ? 
+                        (p.timestamp.toDate ? p.timestamp.toDate().toLocaleDateString() : 
+                        new Date(p.timestamp).toLocaleDateString()) : 'N/A');
                     return `${date}: ₹${p.amount}`;
                 }).join('<br>')
                 : 'No payments';
@@ -625,7 +670,7 @@ service cloud.firestore {
         const updatedPayments = [...(student.payments || []), {
             amount: amount,
             date: paymentDate,
-            timestamp: new Date().toISOString()
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }];
         
         try {
@@ -670,7 +715,11 @@ service cloud.firestore {
             const pending = s.total - s.paid;
             const status = pending === 0 ? 'Paid' : (s.paid === 0 ? 'Unpaid' : 'Partial');
             const lastPayment = s.payments && s.payments.length > 0 
-                ? s.payments[s.payments.length - 1].date 
+                ? (s.payments[s.payments.length - 1].date || 
+                   (s.payments[s.payments.length - 1].timestamp ? 
+                    (s.payments[s.payments.length - 1].timestamp.toDate ? 
+                     s.payments[s.payments.length - 1].timestamp.toDate().toLocaleDateString() : 
+                     new Date(s.payments[s.payments.length - 1].timestamp).toLocaleDateString()) : 'N/A')) 
                 : 'No payments';
             
             data.push([
@@ -706,15 +755,15 @@ service cloud.firestore {
         }
     }
 
-    // Initialize date field and admission number
+    // Initialize date field and admission number on page load
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('paymentDate').value = today;
         
-        // Show setup guide if config is not set
-        if (firebaseConfig.apiKey.includes("DummyKey")) {
-            showError('authError', 
-                'Firebase not configured. Please set up Firebase first (see instructions below)', 
-                false);
+        // Generate initial admission number
+        if (currentUser) {
+            generateAdmissionNo();
         }
     });
 </script>
