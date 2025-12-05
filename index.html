@@ -13,214 +13,427 @@
     <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex;
+            flex-direction: column;
+        }
         .card { border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
         .nav-tabs .nav-link.active { background-color: #5a67d8; color: white; }
         .fee-paid { color: #28a745; font-weight: bold; }
-        .fee-pending { color: #ffc107; font-weight: bold; background: #fff3cd; padding: 4px 10px; border-radius: 20px; }
+        .fee-pending { 
+            color: #e67e22 !important; 
+            font-weight: bold; 
+            background: #fff3cd; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            border: 1px solid #ffc107;
+        }
         .fee-unpaid { color: #dc3545; font-weight: bold; }
         .payment-history { font-size: 0.85em; color: #555; }
-        .report-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .report-card .card-title, .report-card h4, .report-card p, .report-card small { color: white !important; }
+        .report-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white !important; 
+        }
+        .report-card .card-title, 
+        .report-card h4, 
+        .report-card p, 
+        .report-card small,
+        .report-card strong,
+        .report-card hr { 
+            color: white !important; 
+        }
+        .report-card hr { background-color: white; opacity: 1; }
         .btn-excel { background: #1e7e34; color: white; }
         .btn-excel:hover { background: #166a2a; }
         .spinner-border { width: 3rem; height: 3rem; }
         .other-course-input { display: none; margin-top: 10px; }
-        .index-alert { position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px; }
+        .footer {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 0;
+            margin-top: auto;
+            border-top: 3px solid #5a67d8;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .footer a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        .footer .developer {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .header-container {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .iso-badge {
+            font-size: 0.8rem;
+            color: #ffd700;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .company-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .tagline {
+            font-size: 1rem;
+            color: #b8d4ff;
+            font-style: italic;
+        }
+        .nav-tabs .nav-link {
+            color: white;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #5a67d8;
+            color: white;
+        }
+        .btn-edit {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+        }
+        .btn-edit:hover {
+            background-color: #138496;
+            color: white;
+        }
+        #reports-tab {
+            color: white !important;
+        }
+        #students-tab {
+            color: white !important;
+        }
+        .nav-tabs {
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        .header-logo {
+            font-size: 2.5rem;
+            color: #4a90e2;
+            margin-right: 15px;
+        }
     </style>
 </head>
 <body>
 
-<!-- Index Alert -->
-<div id="indexAlert" class="alert alert-warning alert-dismissible fade show index-alert d-none" role="alert">
-    <strong><i class="fas fa-database"></i> Database Index Needed</strong>
-    <p class="mb-1 small">Click below to create the required index:</p>
-    <a href="https://console.firebase.google.com/v1/r/project/studentfeemanagement-aba76/firestore/indexes?create_composite=Cltwcm9qZWN0cy9zdHVkZW50ZmVlbWFuYWdlbWVudC1hYmE3Ni9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvc3R1ZGVudHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaDQoJY3JlYXRlZEF0EAIaDAoIX19uYW1lX18QAg" 
-       target="_blank" class="btn btn-sm btn-primary mt-2">
-        <i class="fas fa-external-link-alt"></i> Create Index Now
-    </a>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
+<!-- Header -->
+<header class="header-container d-none" id="mainHeader">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-12 text-center">
+                <div class="iso-badge mb-2">
+                    <i class="fas fa-award"></i> AN ISO 9001:2015 CERTIFIED ORGANIZATION
+                </div>
+                <h1 class="company-name mb-2">
+                    <i class="fas fa-laptop-code header-logo"></i> SVR COMPUTERS
+                </h1>
+                <div class="tagline mb-3">
+                    Software Training and Development Center
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
 
-<div id="authScreen" class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-md-5">
-            <div class="card border-0">
-                <div class="card-body p-5 text-center">
-                    <i class="fas fa-graduation-cap fa-4x text-primary mb-4"></i>
-                    <h3 class="fw-bold">Fee Management System</h3>
-                    <p class="text-muted mb-4">Secure cloud-based fee tracking</p>
-                    
-                    <div id="authError" class="alert alert-danger d-none"></div>
-                    
-                    <form id="authForm" class="mt-3">
-                        <input type="email" class="form-control form-control-lg mb-3" 
-                               id="email" placeholder="Email" required>
-                        <input type="password" class="form-control form-control-lg mb-3" 
-                               id="password" placeholder="Password (min. 6 chars)" minlength="6" required>
+<!-- Main Content -->
+<div class="main-content">
+    <div id="authScreen" class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-5">
+                <div class="card border-0">
+                    <div class="card-body p-5 text-center">
+                        <i class="fas fa-graduation-cap fa-4x text-primary mb-4"></i>
+                        <h3 class="fw-bold">Fee Management System</h3>
+                        <p class="text-muted mb-4">Secure cloud-based fee tracking</p>
                         
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </button>
-                        <button type="button" id="registerBtn" class="btn btn-outline-primary btn-lg w-100">
-                            <i class="fas fa-user-plus"></i> Create New Account
-                        </button>
-                    </form>
+                        <div id="authError" class="alert alert-danger d-none"></div>
+                        
+                        <form id="authForm" class="mt-3">
+                            <input type="email" class="form-control form-control-lg mb-3" 
+                                   id="email" placeholder="Email" required>
+                            <input type="password" class="form-control form-control-lg mb-3" 
+                                   id="password" placeholder="Password (min. 6 chars)" minlength="6" required>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                            <button type="button" id="registerBtn" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="fas fa-user-plus"></i> Create New Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="container-fluid p-4" style="display: none;">
+        <div class="bg-white rounded shadow-sm p-3 mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">Student Fee Manager</h4>
+                <small id="userEmail" class="text-muted"></small>
+            </div>
+            <button class="btn btn-outline-danger" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students">
+                    <i class="fas fa-users"></i> Students
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="students">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Student</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="addStudentForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Admission No <span class="text-muted">(Auto-generated)</span></label>
+                                        <input type="text" class="form-control" id="admissionNo" readonly style="background-color: #f8f9fa;">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Student Name *</label>
+                                        <input type="text" class="form-control" id="studentName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Father's Name</label>
+                                        <input type="text" class="form-control" id="fatherName">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Mother's Name</label>
+                                        <input type="text" class="form-control" id="motherName">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Guardian Name <small class="text-muted">(if different)</small></label>
+                                        <input type="text" class="form-control" id="guardianName">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Mobile Number</label>
+                                        <input type="tel" class="form-control" id="mobileNumber" placeholder="Enter 10-digit mobile number">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Course *</label>
+                                        <select class="form-select" id="courseName" required onchange="toggleOtherCourseInput()">
+                                            <option value="" selected disabled>Select Course</option>
+                                            <option value="DCA">DCA</option>
+                                            <option value="PGDCA">PGDCA</option>
+                                            <option value="MS-Office">MS-OFFICE</option>
+                                            <option value="Taly+GST">Taly+GST</option>
+                                            <option value="C">C</option>
+                                            <option value="C++">C++</option>
+                                            <option value="Java">Java</option>
+                                            <option value="Python">Python</option>
+                                            <option value="Web Development">Web Development</option>
+                                            <option value="Data Analytics">Data Analytics</option>
+                                            <option value="Oracle/My SQL">Oracle/My SQL</option>
+                                            <option value="Other">Other (Specify)</option>
+                                        </select>
+                                        <div id="otherCourseInput" class="other-course-input">
+                                            <input type="text" class="form-control mt-2" id="otherCourse" placeholder="Enter course name">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Fee (₹) *</label>
+                                        <input type="number" class="form-control" id="courseFee" min="1" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Initial Payment (₹)</label>
+                                        <input type="number" class="form-control" id="amountPaid" min="0" value="0">
+                                        <small class="text-muted">Leave as 0 if no initial payment</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Payment Date</label>
+                                        <input type="date" class="form-control" id="paymentDate">
+                                    </div>
+                                    <div id="formError" class="alert alert-danger d-none"></div>
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-save"></i> Add Student
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-list"></i> All Students</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="loadingData" class="text-center p-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading students...</p>
+                                </div>
+                                <div class="table-responsive d-none" id="tableContainer">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Adm No</th>
+                                                <th>Name</th>
+                                                <th>Mobile</th>
+                                                <th>Father/Mother</th>
+                                                <th>Course</th>
+                                                <th>Total</th>
+                                                <th>Paid</th>
+                                                <th>Pending</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="studentsTable"></tbody>
+                                    </table>
+                                </div>
+                                <div id="noData" class="text-center p-5 d-none">
+                                    <i class="fas fa-user-graduate fa-3x mb-3 text-muted"></i>
+                                    <p>No students added yet.</p>
+                                    <p class="text-muted small">Add your first student using the form on the left</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="reports">
+                <div class="d-flex justify-content-between mb-4">
+                    <h4 class="text-white"><i class="fas fa-chart-line"></i> Fee Reports</h4>
+                    <button id="exportExcel" class="btn btn-excel btn-lg">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                </div>
+                <div class="row" id="courseReports"></div>
+                <div id="noReport" class="text-center p-5 d-none">
+                    <i class="fas fa-chart-bar fa-3x mb-3 text-muted"></i>
+                    <p>No data available for reports.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div id="dashboard" class="container-fluid p-4" style="display: none;">
-    <div class="bg-white rounded shadow-sm p-3 mb-4 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-0">Student Fee Manager</h4>
-            <small id="userEmail" class="text-muted"></small>
+<!-- Footer -->
+<footer class="footer d-none" id="mainFooter">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="mb-1">
+                    <i class="fas fa-globe"></i> Visit us: 
+                    <a href="https://www.svrcomputers.in" target="_blank" class="ms-1">
+                        www.svrcomputers.in
+                    </a>
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <p class="mb-0 developer">
+                    <i class="fas fa-code"></i> Designed and Developed by 
+                    <strong>SVR COMPUTERS</strong>
+                </p>
+            </div>
         </div>
-        <button class="btn btn-outline-danger" id="logoutBtn">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
     </div>
+</footer>
 
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students">
-                <i class="fas fa-users"></i> Students
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports">
-                <i class="fas fa-chart-bar"></i> Reports
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="students">
-            <div class="row">
-                <div class="col-lg-4">
-                    <div class="card mb-4">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Student</h5>
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Student Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm">
+                    <input type="hidden" id="editStudentId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Admission No</label>
+                            <input type="text" class="form-control" id="editAdmissionNo" readonly style="background-color: #f8f9fa;">
                         </div>
-                        <div class="card-body">
-                            <form id="addStudentForm">
-                                <div class="mb-3">
-                                    <label class="form-label">Admission No <span class="text-muted">(Auto-generated)</span></label>
-                                    <input type="text" class="form-control" id="admissionNo" readonly style="background-color: #f8f9fa;">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Student Name *</label>
-                                    <input type="text" class="form-control" id="studentName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Father's Name</label>
-                                    <input type="text" class="form-control" id="fatherName">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Mother's Name</label>
-                                    <input type="text" class="form-control" id="motherName">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Guardian Name <small class="text-muted">(if different)</small></label>
-                                    <input type="text" class="form-control" id="guardianName">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Course *</label>
-                                    <select class="form-select" id="courseName" required onchange="toggleOtherCourseInput()">
-                                        <option value="" selected disabled>Select Course</option>
-                                        <option value="DCA">DCA</option>
-                                        <option value="PGDCA">PGDCA</option>
-                                        <option value="MS-Office">MS-OFFICE</option>
-                                        <option value="Taly+GST">Taly+GST</option>
-                                        <option value="C">C</option>
-                                        <option value="C++">C++</option>
-                                        <option value="Java">Java</option>
-                                        <option value="Python">Python</option>
-                                        <option value="Web Development">Web Development</option>
-                                        <option value="Data Analytics">Data Analytics</option>
-                                        <option value="Oracle/My SQL">Oracle/My SQL</option>
-                                        <option value="Other">Other (Specify)</option>
-                                    </select>
-                                    <div id="otherCourseInput" class="other-course-input">
-                                        <input type="text" class="form-control mt-2" id="otherCourse" placeholder="Enter course name">
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Total Fee (₹) *</label>
-                                    <input type="number" class="form-control" id="courseFee" min="1" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Initial Payment (₹)</label>
-                                    <input type="number" class="form-control" id="amountPaid" min="0" value="0">
-                                    <small class="text-muted">Leave as 0 if no initial payment</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Payment Date</label>
-                                    <input type="date" class="form-control" id="paymentDate">
-                                </div>
-                                <div id="formError" class="alert alert-danger d-none"></div>
-                                <button type="submit" class="btn btn-success w-100">
-                                    <i class="fas fa-save"></i> Add Student
-                                </button>
-                            </form>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Student Name *</label>
+                            <input type="text" class="form-control" id="editStudentName" required>
                         </div>
                     </div>
-                </div>
-
-                <div class="col-lg-8">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-list"></i> All Students</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Father's Name</label>
+                            <input type="text" class="form-control" id="editFatherName">
                         </div>
-                        <div class="card-body p-0">
-                            <div id="loadingData" class="text-center p-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-2">Loading students...</p>
-                            </div>
-                            <div class="table-responsive d-none" id="tableContainer">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Adm No</th>
-                                            <th>Name</th>
-                                            <th>Father/Mother</th>
-                                            <th>Course</th>
-                                            <th>Total</th>
-                                            <th>Paid</th>
-                                            <th>Pending</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="studentsTable"></tbody>
-                                </table>
-                            </div>
-                            <div id="noData" class="text-center p-5 d-none">
-                                <i class="fas fa-user-graduate fa-3x mb-3 text-muted"></i>
-                                <p>No students added yet.</p>
-                                <p class="text-muted small">Add your first student using the form on the left</p>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mother's Name</label>
+                            <input type="text" class="form-control" id="editMotherName">
                         </div>
                     </div>
-                </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Guardian Name</label>
+                            <input type="text" class="form-control" id="editGuardianName">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mobile Number</label>
+                            <input type="tel" class="form-control" id="editMobileNumber">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Course *</label>
+                            <select class="form-select" id="editCourseName" required>
+                                <option value="" selected disabled>Select Course</option>
+                                <option value="DCA">DCA</option>
+                                <option value="PGDCA">PGDCA</option>
+                                <option value="MS-Office">MS-OFFICE</option>
+                                <option value="Taly+GST">Taly+GST</option>
+                                <option value="C">C</option>
+                                <option value="C++">C++</option>
+                                <option value="Java">Java</option>
+                                <option value="Python">Python</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Data Analytics">Data Analytics</option>
+                                <option value="Oracle/My SQL">Oracle/My SQL</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Total Fee (₹) *</label>
+                            <input type="number" class="form-control" id="editCourseFee" min="1" required>
+                        </div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="editFormError"></div>
+                </form>
             </div>
-        </div>
-
-        <div class="tab-pane fade" id="reports">
-            <div class="d-flex justify-content-between mb-4">
-                <h4 class="text-white"><i class="fas fa-chart-line"></i> Fee Reports</h4>
-                <button id="exportExcel" class="btn btn-excel btn-lg">
-                    <i class="fas fa-file-excel"></i> Export Excel
-                </button>
-            </div>
-            <div class="row" id="courseReports"></div>
-            <div id="noReport" class="text-center p-5 d-none">
-                <i class="fas fa-chart-bar fa-3x mb-3 text-muted"></i>
-                <p>No data available for reports.</p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
             </div>
         </div>
     </div>
@@ -245,8 +458,8 @@
     
     let students = [];
     let currentUser = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
+    let admissionCounter = 1;
+    let editModal = null;
 
     // ==================== AUTHENTICATION ====================
     auth.onAuthStateChanged((user) => {
@@ -254,13 +467,20 @@
             currentUser = user;
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('mainHeader').classList.remove('d-none');
+            document.getElementById('mainFooter').classList.remove('d-none');
             document.getElementById('userEmail').textContent = user.email;
             generateAdmissionNo();
             loadStudents();
+            
+            // Initialize modal
+            editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
         } else {
             currentUser = null;
             document.getElementById('authScreen').style.display = 'block';
             document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('mainHeader').classList.add('d-none');
+            document.getElementById('mainFooter').classList.add('d-none');
             students = [];
         }
     });
@@ -296,15 +516,37 @@
     };
 
     // ==================== ADMISSION NO GENERATION ====================
-    function generateAdmissionNo() {
+    async function generateAdmissionNo() {
         if (!currentUser) return;
         
-        // Generate admission number based on timestamp and random number
-        const timestamp = Date.now().toString().slice(-6);
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const admissionNo = `ADM${timestamp}${random}`;
-        document.getElementById('admissionNo').value = admissionNo;
-        return admissionNo;
+        try {
+            const snapshot = await db.collection('students')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            let maxAdmissionNo = 0;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.admissionNo) {
+                    const match = data.admissionNo.match(/ADM(\d+)/);
+                    if (match) {
+                        const num = parseInt(match[1]);
+                        if (num > maxAdmissionNo) {
+                            maxAdmissionNo = num;
+                        }
+                    }
+                }
+            });
+            
+            const nextNumber = maxAdmissionNo + 1;
+            const admissionNo = `ADM${nextNumber.toString().padStart(3, '0')}`;
+            document.getElementById('admissionNo').value = admissionNo;
+            
+        } catch (error) {
+            console.error("Error generating admission number:", error);
+            const timestamp = Date.now().toString().slice(-6);
+            document.getElementById('admissionNo').value = `ADM${timestamp}`;
+        }
     }
 
     // ==================== COURSE SELECTION ====================
@@ -313,13 +555,15 @@
         const otherInput = document.getElementById('otherCourseInput');
         const otherCourseField = document.getElementById('otherCourse');
         
-        if (courseSelect.value === 'Other') {
-            otherInput.style.display = 'block';
-            otherCourseField.required = true;
+        if (courseSelect && courseSelect.value === 'Other') {
+            if (otherInput) otherInput.style.display = 'block';
+            if (otherCourseField) otherCourseField.required = true;
         } else {
-            otherInput.style.display = 'none';
-            otherCourseField.required = false;
-            otherCourseField.value = '';
+            if (otherInput) otherInput.style.display = 'none';
+            if (otherCourseField) {
+                otherCourseField.required = false;
+                otherCourseField.value = '';
+            }
         }
     };
 
@@ -327,108 +571,62 @@
     async function loadStudents() {
         if (!currentUser) return;
         
-        document.getElementById('loadingData').classList.remove('d-none');
-        document.getElementById('tableContainer').classList.add('d-none');
-        document.getElementById('noData').classList.add('d-none');
+        const loadingData = document.getElementById('loadingData');
+        const tableContainer = document.getElementById('tableContainer');
+        const noData = document.getElementById('noData');
+        
+        if (loadingData) loadingData.classList.remove('d-none');
+        if (tableContainer) tableContainer.classList.add('d-none');
+        if (noData) noData.classList.add('d-none');
         
         try {
-            // Try with orderBy first (for indexed databases)
-            try {
-                const snapshot = await db.collection('students')
-                    .where('userId', '==', currentUser.uid)
-                    .orderBy('createdAt', 'desc')
-                    .get();
-                
-                students = [];
-                snapshot.forEach(doc => {
-                    students.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
+            const snapshot = await db.collection('students')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            students = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                students.push({
+                    id: doc.id,
+                    ...data
                 });
-                
-                // Hide index alert if successful
-                document.getElementById('indexAlert').classList.add('d-none');
-                
-            } catch (indexError) {
-                // If index error, fall back to simple query without orderBy
-                console.log("Index error, falling back to simple query:", indexError.message);
-                
-                // Show index alert
-                document.getElementById('indexAlert').classList.remove('d-none');
-                
-                const snapshot = await db.collection('students')
-                    .where('userId', '==', currentUser.uid)
-                    .get();
-                
-                students = [];
-                snapshot.forEach(doc => {
-                    students.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                
-                // Sort locally by creation date (most recent first)
-                students.sort((a, b) => {
-                    const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-                    const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-                    return dateB - dateA; // Descending order
-                });
-            }
+            });
+            
+            // Sort by admission number
+            students.sort((a, b) => {
+                try {
+                    const getAdmNum = (admNo) => {
+                        if (!admNo) return 0;
+                        const match = admNo.match(/ADM(\d+)/);
+                        return match ? parseInt(match[1]) : 0;
+                    };
+                    
+                    const numA = getAdmNum(a.admissionNo);
+                    const numB = getAdmNum(b.admissionNo);
+                    return numA - numB;
+                } catch (e) {
+                    return 0;
+                }
+            });
             
             renderStudents();
             renderReports();
             
         } catch (error) {
             console.error("Error loading students:", error);
-            
-            if (error.code === 'failed-precondition' && error.message.includes('index')) {
-                showError('formError', 
-                    'Database index required. <a href="#" onclick="showIndexInstructions()">Click here for instructions</a>');
-                
-                // Show the index alert
-                document.getElementById('indexAlert').classList.remove('d-none');
-                
-                // Try alternative query without where clause
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    setTimeout(() => loadStudents(), 2000);
-                }
-            } else {
-                showError('formError', 'Error loading data: ' + error.message);
-            }
+            showError('formError', 'Error loading data: ' + error.message);
         } finally {
-            document.getElementById('loadingData').classList.add('d-none');
+            if (loadingData) loadingData.classList.add('d-none');
             if (students.length > 0) {
-                document.getElementById('tableContainer').classList.remove('d-none');
+                if (tableContainer) tableContainer.classList.remove('d-none');
             } else {
-                document.getElementById('noData').classList.remove('d-none');
+                if (noData) noData.classList.remove('d-none');
             }
         }
     }
 
-    // Show index instructions
-    window.showIndexInstructions = function() {
-        alert(`To fix the index issue:
-
-1. CLICK THIS LINK: 
-   https://console.firebase.google.com/v1/r/project/studentfeemanagement-aba76/firestore/indexes?create_composite=Cltwcm9qZWN0cy9zdHVkZW50ZmVlbWFuYWdlbWVudC1hYmE3Ni9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvc3R1ZGVudHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaDQoJY3JlYXRlZEF0EAIaDAoIX19uYW1lX18QAg
-
-2. Click "Create Index" on the Firebase page
-3. Wait 2-5 minutes for the index to build
-4. Refresh this page
-
-OR follow these manual steps:
-1. Go to Firebase Console
-2. Select your project: studentfeemanagement-aba76
-3. Go to Firestore → Indexes tab
-4. Click "Create Index"
-5. Collection: students
-6. Add fields: userId (Ascending), createdAt (Descending)
-7. Click Create`);
-    };
-
+    // ==================== ADD STUDENT FORM ====================
     document.getElementById('addStudentForm').onsubmit = async (e) => {
         e.preventDefault();
         
@@ -442,13 +640,13 @@ OR follow these manual steps:
         const fatherName = document.getElementById('fatherName').value.trim();
         const motherName = document.getElementById('motherName').value.trim();
         const guardianName = document.getElementById('guardianName').value.trim();
+        const mobileNumber = document.getElementById('mobileNumber').value.trim();
         const courseSelect = document.getElementById('courseName').value;
         const otherCourse = document.getElementById('otherCourse').value.trim();
         const total = parseFloat(document.getElementById('courseFee').value);
         const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
         const paymentDate = document.getElementById('paymentDate').value || new Date().toISOString().split('T')[0];
         
-        // Determine course
         let course = courseSelect;
         if (courseSelect === 'Other' && otherCourse) {
             course = otherCourse;
@@ -464,6 +662,11 @@ OR follow these manual steps:
             return;
         }
         
+        if (mobileNumber && !/^\d{10}$/.test(mobileNumber)) {
+            showError('formError', 'Please enter a valid 10-digit mobile number');
+            return;
+        }
+        
         const studentData = {
             userId: currentUser.uid,
             admissionNo: admissionNo,
@@ -471,43 +674,37 @@ OR follow these manual steps:
             fatherName: fatherName,
             motherName: motherName,
             guardianName: guardianName,
+            mobileNumber: mobileNumber,
             course: course,
             total: total,
             paid: paid,
             payments: paid > 0 ? [{ 
                 amount: paid, 
                 date: paymentDate,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: new Date().toISOString()
             }] : [],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
         
         try {
             await db.collection('students').add(studentData);
+            
             document.getElementById('addStudentForm').reset();
             document.getElementById('courseName').selectedIndex = 0;
-            document.getElementById('otherCourseInput').style.display = 'none';
+            if (document.getElementById('otherCourseInput')) {
+                document.getElementById('otherCourseInput').style.display = 'none';
+            }
             document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
-            generateAdmissionNo(); // Generate new admission number
-            showError('formError', '', true); // Clear error
+            generateAdmissionNo();
+            showError('formError', '', true);
             
-            // Reload students after adding
             loadStudents();
             
             alert('Student added successfully!');
         } catch (error) {
             console.error("Error adding student:", error);
-            
-            if (error.code === 'permission-denied') {
-                showError('formError', 
-                    'Permission denied. Please check:<br>' +
-                    '1. Firebase Firestore is enabled<br>' +
-                    '2. Security rules are correctly set<br>' +
-                    '3. Database is in test mode or rules allow writes');
-            } else {
-                showError('formError', 'Error saving: ' + error.message);
-            }
+            showError('formError', 'Error: ' + error.message);
         }
     };
 
@@ -516,6 +713,8 @@ OR follow these manual steps:
         const tbody = document.getElementById('studentsTable');
         const noData = document.getElementById('noData');
         const tableContainer = document.getElementById('tableContainer');
+        
+        if (!tbody || !noData || !tableContainer) return;
         
         if (students.length === 0) {
             noData.classList.remove('d-none');
@@ -538,23 +737,25 @@ OR follow these manual steps:
                 status = `<span class="fee-pending">₹${pending.toFixed(2)} pending</span>`;
             }
             
-            // Format payment history with dates
             const history = student.payments && student.payments.length > 0
                 ? student.payments.map(p => {
-                    const date = p.date || (p.timestamp ? 
-                        (p.timestamp.toDate ? p.timestamp.toDate().toLocaleDateString() : 
-                        new Date(p.timestamp).toLocaleDateString()) : 'N/A');
-                    return `${date}: ₹${p.amount}`;
+                    try {
+                        const date = p.date || (p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A');
+                        return `${date}: ₹${p.amount}`;
+                    } catch (e) {
+                        return `N/A: ₹${p.amount}`;
+                    }
                 }).join('<br>')
                 : 'No payments';
             
-            // Display father/mother/guardian name
             const parentName = student.guardianName || student.fatherName || student.motherName || '-';
+            const mobile = student.mobileNumber || '-';
             
             return `
                 <tr>
                     <td><small class="text-muted">${student.admissionNo || 'N/A'}</small></td>
                     <td><strong>${student.name}</strong></td>
+                    <td>${mobile}</td>
                     <td>${parentName}</td>
                     <td>${student.course}</td>
                     <td>₹${student.total.toFixed(2)}</td>
@@ -562,6 +763,9 @@ OR follow these manual steps:
                     <td>₹${pending.toFixed(2)}</td>
                     <td>${status}</td>
                     <td>
+                        <button class="btn btn-sm btn-edit mb-1" onclick="editStudent('${student.id}', ${index})">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button class="btn btn-sm btn-success mb-1" onclick="addPayment('${student.id}', ${index})">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -571,7 +775,7 @@ OR follow these manual steps:
                     </td>
                 </tr>
                 <tr class="payment-history bg-light">
-                    <td colspan="9" class="p-3">
+                    <td colspan="10" class="p-3">
                         <small><strong><i class="fas fa-history"></i> Payment History:</strong><br>${history}</small>
                     </td>
                 </tr>
@@ -582,6 +786,8 @@ OR follow these manual steps:
     function renderReports() {
         const container = document.getElementById('courseReports');
         const noReport = document.getElementById('noReport');
+        
+        if (!container || !noReport) return;
         
         if (students.length === 0) {
             noReport.classList.remove('d-none');
@@ -625,8 +831,84 @@ OR follow these manual steps:
     }
 
     // ==================== STUDENT OPERATIONS ====================
+    window.editStudent = function(studentId, index) {
+        const student = students[index];
+        if (!student) {
+            alert('Student not found!');
+            return;
+        }
+        
+        // Fill the edit form
+        document.getElementById('editStudentId').value = studentId;
+        document.getElementById('editAdmissionNo').value = student.admissionNo || '';
+        document.getElementById('editStudentName').value = student.name || '';
+        document.getElementById('editFatherName').value = student.fatherName || '';
+        document.getElementById('editMotherName').value = student.motherName || '';
+        document.getElementById('editGuardianName').value = student.guardianName || '';
+        document.getElementById('editMobileNumber').value = student.mobileNumber || '';
+        document.getElementById('editCourseName').value = student.course || '';
+        document.getElementById('editCourseFee').value = student.total || '';
+        
+        // Clear any previous errors
+        document.getElementById('editFormError').classList.add('d-none');
+        document.getElementById('editFormError').innerHTML = '';
+        
+        // Show the modal
+        editModal.show();
+    };
+
+    // Save edited student details
+    document.getElementById('saveEditBtn').onclick = async function() {
+        const studentId = document.getElementById('editStudentId').value;
+        const name = document.getElementById('editStudentName').value.trim();
+        const fatherName = document.getElementById('editFatherName').value.trim();
+        const motherName = document.getElementById('editMotherName').value.trim();
+        const guardianName = document.getElementById('editGuardianName').value.trim();
+        const mobileNumber = document.getElementById('editMobileNumber').value.trim();
+        const course = document.getElementById('editCourseName').value;
+        const total = parseFloat(document.getElementById('editCourseFee').value);
+        
+        if (!name || !course || !total || total <= 0) {
+            document.getElementById('editFormError').classList.remove('d-none');
+            document.getElementById('editFormError').innerHTML = 'Please fill all required fields correctly';
+            return;
+        }
+        
+        if (mobileNumber && !/^\d{10}$/.test(mobileNumber)) {
+            document.getElementById('editFormError').classList.remove('d-none');
+            document.getElementById('editFormError').innerHTML = 'Please enter a valid 10-digit mobile number';
+            return;
+        }
+        
+        try {
+            await db.collection('students').doc(studentId).update({
+                name: name,
+                fatherName: fatherName,
+                motherName: motherName,
+                guardianName: guardianName,
+                mobileNumber: mobileNumber,
+                course: course,
+                total: total,
+                updatedAt: new Date().toISOString()
+            });
+            
+            editModal.hide();
+            alert('Student details updated successfully!');
+            loadStudents();
+        } catch (error) {
+            console.error("Error updating student:", error);
+            document.getElementById('editFormError').classList.remove('d-none');
+            document.getElementById('editFormError').innerHTML = 'Error updating: ' + error.message;
+        }
+    };
+
     window.addPayment = async function(studentId, index) {
         const student = students[index];
+        if (!student) {
+            alert('Student not found!');
+            return;
+        }
+        
         const pending = student.total - student.paid;
         
         let amount = prompt(
@@ -660,7 +942,6 @@ OR follow these manual steps:
             paymentDate = new Date().toISOString().split('T')[0];
         }
         
-        // Validate date format
         if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
             alert('Please enter date in YYYY-MM-DD format');
             return;
@@ -670,18 +951,18 @@ OR follow these manual steps:
         const updatedPayments = [...(student.payments || []), {
             amount: amount,
             date: paymentDate,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            timestamp: new Date().toISOString()
         }];
         
         try {
             await db.collection('students').doc(studentId).update({
                 paid: newPaid,
                 payments: updatedPayments,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                updatedAt: new Date().toISOString()
             });
             
             alert(`Payment of ₹${amount.toFixed(2)} on ${paymentDate} added successfully!`);
-            loadStudents(); // Reload data
+            loadStudents();
         } catch (error) {
             console.error("Error adding payment:", error);
             alert('Error: ' + error.message);
@@ -693,7 +974,7 @@ OR follow these manual steps:
         
         try {
             await db.collection('students').doc(studentId).delete();
-            loadStudents(); // Reload data
+            loadStudents();
         } catch (error) {
             console.error("Error deleting student:", error);
             alert('Error: ' + error.message);
@@ -708,23 +989,23 @@ OR follow these manual steps:
         }
         
         const data = [
-            ['Admission No', 'Name', 'Father Name', 'Mother Name', 'Guardian Name', 'Course', 'Total Fee', 'Paid', 'Pending', 'Status', 'Last Payment Date']
+            ['Admission No', 'Name', 'Mobile', 'Father Name', 'Mother Name', 'Guardian Name', 'Course', 'Total Fee', 'Paid', 'Pending', 'Status', 'Last Payment Date']
         ];
         
         students.forEach(s => {
             const pending = s.total - s.paid;
             const status = pending === 0 ? 'Paid' : (s.paid === 0 ? 'Unpaid' : 'Partial');
-            const lastPayment = s.payments && s.payments.length > 0 
-                ? (s.payments[s.payments.length - 1].date || 
-                   (s.payments[s.payments.length - 1].timestamp ? 
-                    (s.payments[s.payments.length - 1].timestamp.toDate ? 
-                     s.payments[s.payments.length - 1].timestamp.toDate().toLocaleDateString() : 
-                     new Date(s.payments[s.payments.length - 1].timestamp).toLocaleDateString()) : 'N/A')) 
-                : 'No payments';
+            let lastPayment = 'No payments';
+            
+            if (s.payments && s.payments.length > 0) {
+                const last = s.payments[s.payments.length - 1];
+                lastPayment = last.date || (last.timestamp ? new Date(last.timestamp).toLocaleDateString() : 'N/A');
+            }
             
             data.push([
                 s.admissionNo || 'N/A',
                 s.name,
+                s.mobileNumber || '',
                 s.fatherName || '',
                 s.motherName || '',
                 s.guardianName || '',
@@ -746,6 +1027,8 @@ OR follow these manual steps:
     // ==================== UTILITY FUNCTIONS ====================
     function showError(elementId, message, clear = false) {
         const element = document.getElementById(elementId);
+        if (!element) return;
+        
         if (clear || !message) {
             element.classList.add('d-none');
             element.innerHTML = '';
@@ -755,15 +1038,12 @@ OR follow these manual steps:
         }
     }
 
-    // Initialize date field and admission number on page load
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-        // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('paymentDate').value = today;
-        
-        // Generate initial admission number
-        if (currentUser) {
-            generateAdmissionNo();
+        const paymentDateField = document.getElementById('paymentDate');
+        if (paymentDateField) {
+            paymentDateField.value = today;
         }
     });
 </script>
