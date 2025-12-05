@@ -21,9 +21,11 @@
         .fee-unpaid { color: #dc3545; font-weight: bold; }
         .payment-history { font-size: 0.85em; color: #555; }
         .report-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .report-card .card-title, .report-card h4, .report-card p, .report-card small { color: white !important; }
         .btn-excel { background: #1e7e34; color: white; }
         .btn-excel:hover { background: #166a2a; }
         .spinner-border { width: 3rem; height: 3rem; }
+        .other-course-input { display: none; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -134,29 +136,58 @@ service cloud.firestore {
                         <div class="card-body">
                             <form id="addStudentForm">
                                 <div class="mb-3">
-                                    <label class="form-label">Student Name</label>
+                                    <label class="form-label">Admission No <span class="text-muted">(Auto-generated)</span></label>
+                                    <input type="text" class="form-control" id="admissionNo" readonly style="background-color: #f8f9fa;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Student Name *</label>
                                     <input type="text" class="form-control" id="studentName" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Course</label>
-                                    <select class="form-select" id="courseName" required>
+                                    <label class="form-label">Father's Name</label>
+                                    <input type="text" class="form-control" id="fatherName">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Mother's Name</label>
+                                    <input type="text" class="form-control" id="motherName">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Guardian Name <small class="text-muted">(if different)</small></label>
+                                    <input type="text" class="form-control" id="guardianName">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Course *</label>
+                                    <select class="form-select" id="courseName" required onchange="toggleOtherCourseInput()">
                                         <option value="" selected disabled>Select Course</option>
+                                        <option value="DCA">DCA</option>
+                                        <option value="PGDCA">PGDCA</option>
+                                        <option value="MS-Office">MS-OFFICE</option>
+                                        <option value="Taly+GST">Taly+GST</option>
                                         <option value="C">C</option>
                                         <option value="C++">C++</option>
                                         <option value="Java">Java</option>
                                         <option value="Python">Python</option>
                                         <option value="Web Development">Web Development</option>
                                         <option value="Data Analytics">Data Analytics</option>
+                                        <option value="Oracle/My SQL">Oracle/My SQL</option>
+                                        <option value="Other">Other (Specify)</option>
                                     </select>
+                                    <div id="otherCourseInput" class="other-course-input">
+                                        <input type="text" class="form-control mt-2" id="otherCourse" placeholder="Enter course name">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Total Fee (₹)</label>
+                                    <label class="form-label">Total Fee (₹) *</label>
                                     <input type="number" class="form-control" id="courseFee" min="1" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Initial Payment (₹)</label>
                                     <input type="number" class="form-control" id="amountPaid" min="0" value="0">
                                     <small class="text-muted">Leave as 0 if no initial payment</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Payment Date</label>
+                                    <input type="date" class="form-control" id="paymentDate" value="<?php echo date('Y-m-d'); ?>">
                                 </div>
                                 <div id="formError" class="alert alert-danger d-none"></div>
                                 <button type="submit" class="btn btn-success w-100">
@@ -183,7 +214,9 @@ service cloud.firestore {
                                 <table class="table table-hover mb-0">
                                     <thead class="table-light">
                                         <tr>
+                                            <th>Adm No</th>
                                             <th>Name</th>
+                                            <th>Father/Mother</th>
                                             <th>Course</th>
                                             <th>Total</th>
                                             <th>Paid</th>
@@ -208,7 +241,7 @@ service cloud.firestore {
 
         <div class="tab-pane fade" id="reports">
             <div class="d-flex justify-content-between mb-4">
-                <h4><i class="fas fa-chart-line"></i> Fee Reports</h4>
+                <h4 class="text-white"><i class="fas fa-chart-line"></i> Fee Reports</h4>
                 <button id="exportExcel" class="btn btn-excel btn-lg">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </button>
@@ -225,15 +258,14 @@ service cloud.firestore {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== FIREBASE CONFIGURATION ====================
-    // REPLACE THESE VALUES WITH YOUR OWN FROM FIREBASE CONSOLE
-   const firebaseConfig = {
-  apiKey: "AIzaSyAVSXUfE6KoHhSwiohSe_spXkeBcI_OHxM",
-  authDomain: "studentfeemanagement-e5779.firebaseapp.com",
-  projectId: "studentfeemanagement-e5779",
-  storageBucket: "studentfeemanagement-e5779.firebasestorage.app",
-  messagingSenderId: "495805618302",
-  appId: "1:495805618302:web:171f95412ebaec4b39e02f"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyAGBurpdWEDAFT05u1-pkKsmR1RblU9_Ns",
+        authDomain: "studentfeemanagement-aba76.firebaseapp.com",
+        projectId: "studentfeemanagement-aba76",
+        storageBucket: "studentfeemanagement-aba76.firebasestorage.app",
+        messagingSenderId: "345753041206",
+        appId: "1:345753041206:web:4782a7812e2f4917051b97"
+    };
 
     // Initialize Firebase
     if (firebaseConfig.apiKey.includes("DummyKey")) {
@@ -246,6 +278,7 @@ service cloud.firestore {
     
     let students = [];
     let currentUser = null;
+    let lastAdmissionNo = 0;
 
     // ==================== AUTHENTICATION ====================
     auth.onAuthStateChanged((user) => {
@@ -254,6 +287,7 @@ service cloud.firestore {
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
             document.getElementById('userEmail').textContent = user.email;
+            generateAdmissionNo();
             loadStudents();
         } else {
             currentUser = null;
@@ -298,6 +332,34 @@ service cloud.firestore {
         }
     };
 
+    // ==================== ADMISSION NO GENERATION ====================
+    function generateAdmissionNo() {
+        if (!currentUser) return;
+        
+        // Generate admission number based on timestamp and user ID
+        const timestamp = Date.now().toString().slice(-6);
+        const userIdPrefix = currentUser.uid.slice(0, 3).toUpperCase();
+        const admissionNo = `ADM${userIdPrefix}${timestamp}`;
+        document.getElementById('admissionNo').value = admissionNo;
+        return admissionNo;
+    }
+
+    // ==================== COURSE SELECTION ====================
+    window.toggleOtherCourseInput = function() {
+        const courseSelect = document.getElementById('courseName');
+        const otherInput = document.getElementById('otherCourseInput');
+        const otherCourseField = document.getElementById('otherCourse');
+        
+        if (courseSelect.value === 'Other') {
+            otherInput.style.display = 'block';
+            otherCourseField.required = true;
+        } else {
+            otherInput.style.display = 'none';
+            otherCourseField.required = false;
+            otherCourseField.value = '';
+        }
+    };
+
     // ==================== STUDENT MANAGEMENT ====================
     async function loadStudents() {
         if (!currentUser) return;
@@ -305,6 +367,7 @@ service cloud.firestore {
         try {
             const snapshot = await db.collection('students')
                 .where('userId', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
                 .get();
             
             students = [];
@@ -335,13 +398,25 @@ service cloud.firestore {
             return;
         }
         
+        const admissionNo = document.getElementById('admissionNo').value;
         const name = document.getElementById('studentName').value.trim();
-        const course = document.getElementById('courseName').value;
+        const fatherName = document.getElementById('fatherName').value.trim();
+        const motherName = document.getElementById('motherName').value.trim();
+        const guardianName = document.getElementById('guardianName').value.trim();
+        const courseSelect = document.getElementById('courseName').value;
+        const otherCourse = document.getElementById('otherCourse').value.trim();
         const total = parseFloat(document.getElementById('courseFee').value);
         const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const paymentDate = document.getElementById('paymentDate').value || new Date().toISOString().split('T')[0];
+        
+        // Determine course
+        let course = courseSelect;
+        if (courseSelect === 'Other' && otherCourse) {
+            course = otherCourse;
+        }
         
         if (!name || !course || !total || total <= 0) {
-            showError('formError', 'Please fill all fields correctly');
+            showError('formError', 'Please fill all required fields (*) correctly');
             return;
         }
         
@@ -352,18 +427,30 @@ service cloud.firestore {
         
         const studentData = {
             userId: currentUser.uid,
-            name,
-            course,
-            total,
-            paid,
-            payments: paid > 0 ? [{ amount: paid, date: new Date().toLocaleDateString() }] : [],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            admissionNo: admissionNo,
+            name: name,
+            fatherName: fatherName,
+            motherName: motherName,
+            guardianName: guardianName,
+            course: course,
+            total: total,
+            paid: paid,
+            payments: paid > 0 ? [{ 
+                amount: paid, 
+                date: paymentDate,
+                timestamp: new Date().toISOString()
+            }] : [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
         try {
             await db.collection('students').add(studentData);
             document.getElementById('addStudentForm').reset();
             document.getElementById('courseName').selectedIndex = 0;
+            document.getElementById('otherCourseInput').style.display = 'none';
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+            generateAdmissionNo(); // Generate new admission number
             showError('formError', '', true); // Clear error
             loadStudents(); // Reload the list
         } catch (error) {
@@ -408,13 +495,22 @@ service cloud.firestore {
                 status = `<span class="fee-pending">₹${pending.toFixed(2)} pending</span>`;
             }
             
+            // Format payment history with dates
             const history = student.payments && student.payments.length > 0
-                ? student.payments.map(p => `${p.date}: ₹${p.amount}`).join('<br>')
+                ? student.payments.map(p => {
+                    const date = p.date || (p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A');
+                    return `${date}: ₹${p.amount}`;
+                }).join('<br>')
                 : 'No payments';
+            
+            // Display father/mother/guardian name
+            const parentName = student.guardianName || student.fatherName || student.motherName || '-';
             
             return `
                 <tr>
+                    <td><small class="text-muted">${student.admissionNo || 'N/A'}</small></td>
                     <td><strong>${student.name}</strong></td>
+                    <td>${parentName}</td>
                     <td>${student.course}</td>
                     <td>₹${student.total.toFixed(2)}</td>
                     <td>₹${student.paid.toFixed(2)}</td>
@@ -430,7 +526,7 @@ service cloud.firestore {
                     </td>
                 </tr>
                 <tr class="payment-history bg-light">
-                    <td colspan="7" class="p-3">
+                    <td colspan="9" class="p-3">
                         <small><strong><i class="fas fa-history"></i> Payment History:</strong><br>${history}</small>
                     </td>
                 </tr>
@@ -474,7 +570,7 @@ service cloud.firestore {
                                 </div>
                             </div>
                             <hr class="my-3">
-                            <p><strong>Total:</strong> ₹${totalFee.toFixed(2)}</p>
+                            <p><strong>Total Fee:</strong> ₹${totalFee.toFixed(2)}</p>
                             <p><strong>Pending:</strong> ₹${totalPending.toFixed(2)}</p>
                         </div>
                     </div>
@@ -488,7 +584,7 @@ service cloud.firestore {
         const student = students[index];
         const pending = student.total - student.paid;
         
-        const amount = prompt(
+        let amount = prompt(
             `Add payment for ${student.name}\n` +
             `Total: ₹${student.total.toFixed(2)}\n` +
             `Paid: ₹${student.paid.toFixed(2)}\n` +
@@ -497,17 +593,39 @@ service cloud.firestore {
         );
         
         if (!amount) return;
-        const amt = parseFloat(amount);
         
-        if (isNaN(amt) || amt <= 0) {
+        amount = parseFloat(amount);
+        if (isNaN(amount) || amount <= 0) {
             alert('Please enter a valid amount');
             return;
         }
         
-        const newPaid = student.paid + amt;
+        if (amount > pending) {
+            if (!confirm(`Amount (₹${amount}) exceeds pending (₹${pending}). Add anyway?`)) {
+                return;
+            }
+        }
+        
+        let paymentDate = prompt('Enter payment date (YYYY-MM-DD) or leave blank for today:', 
+                               new Date().toISOString().split('T')[0]);
+        
+        if (paymentDate === null) return;
+        
+        if (!paymentDate) {
+            paymentDate = new Date().toISOString().split('T')[0];
+        }
+        
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+            alert('Please enter date in YYYY-MM-DD format');
+            return;
+        }
+        
+        const newPaid = student.paid + amount;
         const updatedPayments = [...(student.payments || []), {
-            amount: amt,
-            date: new Date().toLocaleDateString()
+            amount: amount,
+            date: paymentDate,
+            timestamp: new Date().toISOString()
         }];
         
         try {
@@ -517,7 +635,7 @@ service cloud.firestore {
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             
-            alert(`Payment of ₹${amt.toFixed(2)} added successfully!`);
+            alert(`Payment of ₹${amount.toFixed(2)} on ${paymentDate} added successfully!`);
             loadStudents(); // Reload data
         } catch (error) {
             console.error("Error adding payment:", error);
@@ -545,19 +663,28 @@ service cloud.firestore {
         }
         
         const data = [
-            ['Name', 'Course', 'Total Fee', 'Paid', 'Pending', 'Status']
+            ['Admission No', 'Name', 'Father Name', 'Mother Name', 'Guardian Name', 'Course', 'Total Fee', 'Paid', 'Pending', 'Status', 'Last Payment Date']
         ];
         
         students.forEach(s => {
             const pending = s.total - s.paid;
             const status = pending === 0 ? 'Paid' : (s.paid === 0 ? 'Unpaid' : 'Partial');
+            const lastPayment = s.payments && s.payments.length > 0 
+                ? s.payments[s.payments.length - 1].date 
+                : 'No payments';
+            
             data.push([
+                s.admissionNo || 'N/A',
                 s.name,
+                s.fatherName || '',
+                s.motherName || '',
+                s.guardianName || '',
                 s.course,
                 s.total,
                 s.paid,
                 pending,
-                status
+                status,
+                lastPayment
             ]);
         });
         
@@ -579,12 +706,17 @@ service cloud.firestore {
         }
     }
 
-    // Show setup guide if config is not set
-    if (firebaseConfig.apiKey.includes("DummyKey")) {
-        showError('authError', 
-            'Firebase not configured. Please set up Firebase first (see instructions below)', 
-            false);
-    }
+    // Initialize date field and admission number
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+        
+        // Show setup guide if config is not set
+        if (firebaseConfig.apiKey.includes("DummyKey")) {
+            showError('authError', 
+                'Firebase not configured. Please set up Firebase first (see instructions below)', 
+                false);
+        }
+    });
 </script>
 </body>
 </html>
